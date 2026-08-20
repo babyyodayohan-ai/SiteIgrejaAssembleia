@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Projeto Itaqui - Portal & Comunidade</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+  <!-- TELA DE AUTENTICAÇÃO (LOGIN / REGISTRO) -->
+  <div id="auth-screen" class="screen-container">
+    <div class="glass-card auth-box">
+      <div class="logo-header">
+        <i class="fa-solid fa-church logo-icon"></i>
+        <h2>Projeto Itaqui</h2>
+        <p>Acesse sua conta para continuar</p>
+      </div>
+
+      <div class="auth-tabs">
+        <button id="tab-login-btn" class="tab-btn active" onclick="switchAuthTab('login')">Entrar</button>
+        <button id="tab-register-btn" class="tab-btn" onclick="switchAuthTab('register')">Registrar</button>
+      </div>
+
+      <form id="auth-form" onsubmit="handleAuthSubmit(event)">
+        <div class="input-group">
+          <i class="fa-solid fa-envelope"></i>
+          <input type="email" id="auth-email" placeholder="Seu e-mail (Gmail)" required>
+        </div>
+        <div class="input-group">
+          <i class="fa-solid fa-lock"></i>
+          <input type="password" id="auth-password" placeholder="Sua senha" required>
+        </div>
+        
+        <button type="submit" id="auth-submit-btn" class="primary-btn">
+          <span>Entrar</span>
+        </button>
+      </form>
+
+      <div class="divider"><span>ou</span></div>
+
+      <button class="google-btn" onclick="handleGoogleLogin()">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+        <span>Continuar com Google</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL DE ONBOARDING (PRIMEIRO ACESSO) -->
+  <div id="onboarding-modal" class="modal-overlay hidden">
+    <div class="glass-card modal-box">
+      <h3>Complete seu Perfil</h3>
+      <p>Precisamos de mais algumas informações antes de entrar.</p>
+
+      <form id="onboarding-form" onsubmit="saveOnboarding(event)">
+        <div class="avatar-upload">
+          <img id="avatar-preview" src="https://via.placeholder.com/100" alt="Avatar">
+          <label for="avatar-input" class="upload-btn"><i class="fa-solid fa-camera"></i> Escolher Foto</label>
+          <input type="file" id="avatar-input" accept="image/*" onchange="previewImage(event)">
+        </div>
+
+        <div class="input-group">
+          <i class="fa-solid fa-user"></i>
+          <input type="text" id="onboard-name" placeholder="Primeiro Nome" required>
+        </div>
+
+        <div class="input-group">
+          <i class="fa-solid fa-calendar"></i>
+          <input type="date" id="onboard-dob" required>
+        </div>
+
+        <button type="submit" class="primary-btn">Concluir Cadastro</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- APLICAÇÃO PRINCIPAL -->
+  <div id="app-screen" class="hidden">
+    <!-- NAVBAR -->
+    <header class="navbar">
+      <div class="nav-brand">
+        <i class="fa-solid fa-church"></i>
+        <span>Itaqui</span>
+      </div>
+      <div class="nav-actions">
+        <button id="admin-badge-btn" class="admin-badge hidden" onclick="openAdminModal()">
+          <i class="fa-solid fa-user-shield"></i> Painel Admin
+        </button>
+        <div class="user-profile-btn" onclick="openSettingsModal()">
+          <img id="nav-user-photo" src="https://via.placeholder.com/40" alt="Perfil">
+          <span id="nav-user-name">Usuário</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- CONTAINER DE CARDS DADOS DO DIA (ONTEM / HOJE / AMANHÃ) -->
+    <main class="main-content">
+      <section class="cards-carousel-section">
+        <h2 class="section-title"><i class="fa-solid fa-calendar-day"></i> Programação</h2>
+        <div class="cards-carousel">
+          <!-- CARD ONTEM -->
+          <div class="event-card side-card left" id="card-yesterday">
+            <div class="card-badge">Ontem</div>
+            <div class="card-image-wrapper">
+              <img id="yesterday-img" src="https://images.unsplash.com/photo-1438232992991-995b7058bbb3?w=500" alt="Capa">
+            </div>
+            <div class="card-body">
+              <h4 id="yesterday-title">Culto Passado</h4>
+              <p class="preacher"><i class="fa-solid fa-microphone"></i> <span id="yesterday-preacher">-</span></p>
+            </div>
+          </div>
+
+          <!-- CARD HOJE (DESTAQUE NO MEIO) -->
+          <div class="event-card center-card active" id="card-today">
+            <div class="card-badge today-tag">Hoje</div>
+            <div class="card-image-wrapper">
+              <img id="today-img" src="https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=600" alt="Capa Hoje">
+              <div class="type-tag" id="today-type">Culto Principal</div>
+            </div>
+            <div class="card-body">
+              <h3 id="today-title">Carregando evento de hoje...</h3>
+              <p class="preacher"><i class="fa-solid fa-user-tie"></i> Pregador: <strong id="today-preacher">A definir</strong></p>
+              <p class="description" id="today-desc">Acompanhe nossa programação do dia.</p>
+            </div>
+          </div>
+
+          <!-- CARD AMANHÃ -->
+          <div class="event-card side-card right locked" id="card-tomorrow">
+            <div class="card-badge">Amanhã</div>
+            <div class="lock-overlay" id="tomorrow-lock">
+              <i class="fa-solid fa-lock"></i>
+              <span>Bloqueado até a publicação</span>
+            </div>
+            <div class="card-image-wrapper">
+              <img id="tomorrow-img" src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500" alt="Capa">
+            </div>
+            <div class="card-body">
+              <h4 id="tomorrow-title">Próximo Evento</h4>
+              <p class="preacher"><i class="fa-solid fa-microphone"></i> <span id="tomorrow-preacher">-</span></p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CHAT EM GRUPO DA COMUNIDADE -->
+      <section class="chat-section">
+        <div class="chat-header">
+          <h3><i class="fa-solid fa-comments"></i> Chat da Comunidade</h3>
+          <span class="online-indicator"><i class="fa-solid fa-circle"></i> Ao vivo</span>
+        </div>
+
+        <div id="chat-messages" class="chat-messages-container">
+          <!-- Mensagens renderizadas via JS -->
+        </div>
+
+        <div class="chat-input-bar">
+          <button id="mic-btn" class="icon-btn mic-btn" title="Gravar Áudio">
+            <i class="fa-solid fa-microphone"></i>
+          </button>
+          <input type="text" id="chat-text-input" placeholder="Digite sua mensagem...">
+          <button id="send-msg-btn" class="icon-btn send-btn" onclick="sendTextMessage()">
+            <i class="fa-solid fa-paper-plane"></i>
+          </button>
+        </div>
+        <div id="recording-status" class="recording-status hidden">
+          <span class="pulsing-red-dot"></span> Gravando áudio... <button onclick="cancelRecording()">Cancelar</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- MODAL DO PAINEL ADMIN -->
+  <div id="admin-modal" class="modal-overlay hidden">
+    <div class="glass-card modal-box large">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-sliders"></i> Painel do Administrador</h3>
+        <button class="close-btn" onclick="closeAdminModal()">&times;</button>
+      </div>
+      <form id="admin-event-form" onsubmit="saveAdminEvent(event)">
+        <h4>Publicar/Atualizar Evento de Hoje</h4>
+        
+        <div class="input-group">
+          <label>Título do Evento</label>
+          <input type="text" id="admin-title" placeholder="Ex: Culto da Família" required>
+        </div>
+
+        <div class="input-group">
+          <label>Tipo de Evento</label>
+          <select id="admin-type">
+            <option value="Culto">Culto</option>
+            <option value="Ensaio Jovens">Ensaio Jovens</option>
+            <option value="Ensaio Infantil">Ensaio Infantil</option>
+            <option value="Círculo de Oração">Círculo de Oração</option>
+            <option value="Percussão">Percussão</option>
+            <option value="Outro">Outro</option>
+          </select>
+        </div>
+
+        <div class="input-group">
+          <label>Quem irá Pregar / Dirigir</label>
+          <input type="text" id="admin-preacher" placeholder="Nome do Pregador ou Líder" required>
+        </div>
+
+        <div class="input-group">
+          <label>Foto de Capa (URL ou Upload)</label>
+          <input type="file" id="admin-img-file" accept="image/*" onchange="previewAdminImage(event)">
+          <input type="text" id="admin-img-url" placeholder="Ou cole a URL da imagem">
+        </div>
+
+        <div class="input-group">
+          <label>Descrição Breve</label>
+          <textarea id="admin-desc" rows="3" placeholder="Detalhes do culto ou ensaio..."></textarea>
+        </div>
+
+        <button type="submit" class="primary-btn"><i class="fa-solid fa-floppy-disk"></i> Publicar para Hoje</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL DE CONFIGURAÇÕES -->
+  <div id="settings-modal" class="modal-overlay hidden">
+    <div class="glass-card modal-box">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-gear"></i> Configurações da Conta</h3>
+        <button class="close-btn" onclick="closeSettingsModal()">&times;</button>
+      </div>
+      
+      <div class="settings-profile-info">
+        <img id="settings-avatar" src="https://via.placeholder.com/80" alt="Avatar">
+        <h4 id="settings-name-display">-</h4>
+        <p id="settings-email-display">-</p>
+      </div>
+
+      <form id="settings-form" onsubmit="updateProfileSettings(event)">
+        <div class="input-group">
+          <label>Alterar Nome</label>
+          <input type="text" id="settings-name-input">
+        </div>
+
+        <div class="input-group">
+          <label>Alterar Foto de Perfil</label>
+          <input type="file" id="settings-photo-input" accept="image/*">
+        </div>
+
+        <button type="submit" class="primary-btn">Salvar Alterações</button>
+      </form>
+
+      <hr class="divider-line">
+
+      <button class="danger-btn" onclick="handleLogout()">
+        <i class="fa-solid fa-right-from-bracket"></i> Sair da Conta
+      </button>
+    </div>
+  </div>
+
+  <script type="module" src="script.js"></script>
+</body>
+                </html>
+            
