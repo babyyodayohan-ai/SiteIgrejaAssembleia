@@ -1,13 +1,13 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+import { initializeApp } from "[https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js](https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js)";
 import { 
   getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, 
-  signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged 
-} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+  signInWithRedirect, getRedirectResult, GoogleAuthProvider, signOut, onAuthStateChanged 
+} from "[https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js](https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js)";
 import { 
   getFirestore, doc, setDoc, getDoc, collection, addDoc, onSnapshot, query, orderBy, updateDoc, arrayUnion, arrayRemove 
-} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+} from "[https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js](https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js)";
 
-// Configuração Firebase
+// Configuração do seu Projeto Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyC-2IggENJIhqbGSdP5RIefR-VQt1RCT90",
   authDomain: "projetoitaqui-8327c.firebaseapp.com",
@@ -21,47 +21,87 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-
 const ADMIN_EMAIL = "babyyoda.yohan@gmail.com";
 
 let currentUser = null;
 let userProfile = null;
 let currentAuthMode = 'login';
-let mediaRecorder = null;
-let audioChunks = [];
+let adminImageBase64 = null;
 
-// INICIALIZAÇÃO E MONITORAMENTO DE AUTENTICAÇÃO
-onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    currentUser = user;
-    const userDoc = await getDoc(doc(db, "users", user.uid));
-    
-    if (userDoc.exists()) {
-      userProfile = userDoc.data();
-      showMainApp();
-    } else {
-      document.getElementById('onboarding-modal').classList.remove('hidden');
-    }
-  } else {
-    currentUser = null;
-    userProfile = null;
-    document.getElementById('app-screen').classList.add('hidden');
-    document.getElementById('auth-screen').classList.remove('hidden');
+// Tratar o retorno do login redirecionado do Google
+getRedirectResult(auth).catch((error) => {
+  console.error("Erro no redirecionamento do Google:", error);
+  if (error.code === 'auth/unauthorized-domain') {
+    alert("Atenção: Adicione 'babyyodayohan-ai.github.io' nos Domínios Autorizados no console do Firebase!");
   }
 });
 
-// SUBMIT LOGIN / REGISTRO
+// Utilitários UI Globais (anexados ao window para o HTML poder chamar)
 window.switchAuthTab = (mode) => {
   currentAuthMode = mode;
   document.getElementById('tab-login-btn').classList.toggle('active', mode === 'login');
   document.getElementById('tab-register-btn').classList.toggle('active', mode === 'register');
-  document.querySelector('#auth-submit-btn span').innerText = mode === 'login' ? 'Entrar' : 'Cadastrar';
+  document.querySelector('#auth-submit-btn span').innerText = mode === 'login' ? 'Entrar' : 'Registar';
 };
 
+window.openModal = (id) => document.getElementById(id).classList.remove('hidden');
+window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
+
+window.previewImage = (e, targetId) => {
+  const file = e.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = document.getElementById(targetId);
+      img.src = event.target.result;
+      img.style.display = 'block';
+      if(targetId === 'admin-img-preview') adminImageBase64 = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+};
+
+// Monitorar Autenticação
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    currentUser = user;
+    const userDoc = await getDoc(doc(db, "users", user.uid));
+    if (userDoc.exists()) {
+      userProfile = userDoc.data();
+      showMainApp();
+    } else {
+      // Se entrou com Google, preenche nome e foto automaticamente
+      if(user.displayName) {
+        document.getElementById('onboard-name').value = user.displayName.split(' ')[0];
+      }
+      if(user.photoURL) {
+        document.getElementById('avatar-preview').src = user.photoURL;
+      }
+      document.getElementById('auth-screen').classList.add('hidden');
+      document.getElementById('onboarding-modal').classList.remove('hidden');
+    }
+  } else {
+    currentUser = null; userProfile = null;
+    document.getElementById('app-screen').classList.add('hidden');
+    document.getElementById('onboarding-modal').classList.add('hidden');
+    document.getElementById('auth-screen').classList.remove('hidden');
+  }
+});
+
+// Submeter Login / Registo por Email
 window.handleAuthSubmit = async (e) => {
   e.preventDefault();
-  const email = document.getElementById('auth-email').value;
+  const email = document.getElementById('auth-email').value.trim();
   const password = document.getElementById('auth-password').value;
+  const btn = document.getElementById('auth-submit-btn');
+  
+  if (password.length < 6) {
+    alert("A palavra-passe precisa de ter pelo menos 6 caracteres!");
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
 
   try {
     if (currentAuthMode === 'login') {
@@ -70,72 +110,78 @@ window.handleAuthSubmit = async (e) => {
       await createUserWithEmailAndPassword(auth, email, password);
     }
   } catch (err) {
-    alert("Erro de autenticação: " + err.message);
+    if (err.code === 'auth/invalid-credential') {
+      alert("Erro: Conta não encontrada ou palavra-passe incorreta. Se é a primeira vez, clique na aba 'Registar'.");
+    } else if (err.code === 'auth/email-already-in-use') {
+      alert("Este e-mail já está registado. Vá para a aba 'Entrar'.");
+    } else if (err.code === 'auth/weak-password') {
+      alert("A palavra-passe precisa de ter no mínimo 6 caracteres! Tente uma palavra-passe como 'Admin123'.");
+    } else {
+      alert("Erro: " + err.message);
+    }
   }
+  btn.disabled = false;
+  btn.innerHTML = `<span>${currentAuthMode === 'login' ? 'Entrar' : 'Registar'}</span>`;
 };
 
+// Login com Google usando Redirect (Compatível com Telemóveis)
 window.handleGoogleLogin = async () => {
+  const provider = new GoogleAuthProvider();
   try {
-    const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
+    await signInWithRedirect(auth, provider);
   } catch (err) {
-    alert("Erro Google Auth: " + err.message);
+    alert("Erro no Google Auth: " + err.message);
   }
 };
 
-// ONBOARDING (PRIMEIRO ACESSO)
-window.previewImage = (e) => {
-  const file = e.target.files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      document.getElementById('avatar-preview').src = event.target.result;
-    };
-    reader.readAsDataURL(file);
-  }
-};
-
+// Onboarding
 window.saveOnboarding = async (e) => {
   e.preventDefault();
   const name = document.getElementById('onboard-name').value;
   const dob = document.getElementById('onboard-dob').value;
-  const photoSrc = document.getElementById('avatar-preview').src;
+  let photoSrc = document.getElementById('avatar-preview').src;
+  
+  if(photoSrc.includes('ui-avatars')) {
+    photoSrc = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=6366f1&color=fff`;
+  }
 
-  const profileData = {
+  userProfile = {
     firstName: name,
     birthDate: dob,
-    photoURL: photoSrc.startsWith('data:') ? photoSrc : (currentUser.photoURL || 'https://via.placeholder.com/100'),
+    photoURL: photoSrc,
     email: currentUser.email,
     createdAt: new Date().toISOString()
   };
 
-  await setDoc(doc(db, "users", currentUser.uid), profileData);
-  userProfile = profileData;
+  await setDoc(doc(db, "users", currentUser.uid), userProfile);
   document.getElementById('onboarding-modal').classList.add('hidden');
   showMainApp();
 };
 
-// SHOWN MAIN APP
+// App Principal
 function showMainApp() {
   document.getElementById('auth-screen').classList.add('hidden');
   document.getElementById('app-screen').classList.remove('hidden');
 
-  // Atualizar UI do Usuário
-  document.getElementById('nav-user-name').innerText = userProfile.firstName || 'Membro';
-  document.getElementById('nav-user-photo').src = userProfile.photoURL || 'https://via.placeholder.com/40';
+  document.getElementById('nav-user-name').innerText = userProfile.firstName;
+  document.getElementById('nav-user-photo').src = userProfile.photoURL;
 
-  // Verificar se é Admin
   if (currentUser.email === ADMIN_EMAIL) {
     document.getElementById('admin-badge-btn').classList.remove('hidden');
   }
-
+  
   loadEvents();
   listenToChat();
 }
 
-// LÓGICA DE PROGRAMAÇÃO E EVENTOS (CAROUSEL CARDS)
+// Programação
+function getTodayString() {
+  const d = new Date();
+  return new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+}
+
 function loadEvents() {
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getTodayString();
   
   onSnapshot(doc(db, "events", todayStr), (docSnap) => {
     if (docSnap.exists()) {
@@ -145,29 +191,12 @@ function loadEvents() {
       document.getElementById('today-preacher').innerText = data.preacher;
       document.getElementById('today-desc').innerText = data.description || '';
       if (data.image) document.getElementById('today-img').src = data.image;
-      
-      document.getElementById('tomorrow-lock').classList.add('hidden');
     } else {
-      document.getElementById('today-title').innerText = "Nenhum evento publicado para hoje";
-      document.getElementById('today-preacher').innerText = "Aguardando Admin";
-      document.getElementById('tomorrow-lock').classList.remove('hidden');
+      document.getElementById('today-title').innerText = "Programação de hoje ainda não definida";
+      document.getElementById('today-preacher').innerText = "A aguardar";
     }
   });
 }
-
-// PAINEL ADMIN
-window.openAdminModal = () => document.getElementById('admin-modal').classList.remove('hidden');
-window.closeAdminModal = () => document.getElementById('admin-modal').classList.add('hidden');
-
-let adminImageBase64 = "";
-window.previewAdminImage = (e) => {
-  const file = e.target.files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = (event) => { adminImageBase64 = event.target.result; };
-    reader.readAsDataURL(file);
-  }
-};
 
 window.saveAdminEvent = async (e) => {
   e.preventDefault();
@@ -175,59 +204,60 @@ window.saveAdminEvent = async (e) => {
   const type = document.getElementById('admin-type').value;
   const preacher = document.getElementById('admin-preacher').value;
   const desc = document.getElementById('admin-desc').value;
-  const imgUrlInput = document.getElementById('admin-img-url').value;
 
-  const todayStr = new Date().toISOString().split('T')[0];
   const eventData = {
-    title,
-    type,
-    preacher,
-    description: desc,
-    image: adminImageBase64 || imgUrlInput || "https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=600",
+    title, type, preacher, description: desc,
+    image: adminImageBase64 || "[https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=600](https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=600)",
     updatedAt: new Date().toISOString()
   };
 
-  await setDoc(doc(db, "events", todayStr), eventData);
-  alert("Evento de hoje publicado com sucesso!");
-  closeAdminModal();
+  const btn = e.target.querySelector('button');
+  btn.innerText = "A publicar...";
+  
+  await setDoc(doc(db, "events", getTodayString()), eventData);
+  
+  alert("Atualizado com sucesso!");
+  btn.innerHTML = '<i class="fa-solid fa-upload"></i> Publicar para Hoje';
+  closeModal('admin-modal');
 };
 
-// CHAT DA COMUNIDADE (TEXTO, ÁUDIO E CURTIDAS)
+// Chat
 function listenToChat() {
   const q = query(collection(db, "chats"), orderBy("timestamp", "asc"));
   
   onSnapshot(q, (snapshot) => {
     const container = document.getElementById('chat-messages');
+    const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 100;
+    
     container.innerHTML = '';
-
     snapshot.forEach((docSnap) => {
       const msg = docSnap.data();
-      const msgId = docSnap.id;
       const isMine = msg.senderUid === currentUser.uid;
       const liked = msg.likes && msg.likes.includes(currentUser.uid);
+      const likesCount = msg.likes ? msg.likes.length : 0;
 
       const msgDiv = document.createElement('div');
       msgDiv.className = `message-bubble ${isMine ? 'mine' : ''}`;
 
-      let contentHTML = msg.text ? `<p class="msg-text">${msg.text}</p>` : '';
+      let contentHTML = msg.text ? `<div class="msg-text">${msg.text}</div>` : '';
       if (msg.audio) {
-        contentHTML += `<audio controls src="${msg.audio}" style="max-width: 200px; margin-top:5px;"></audio>`;
+        contentHTML += `<audio controls src="${msg.audio}" style="width: 100%; max-width: 250px; height: 30px; margin-top:5px; border-radius: 15px;"></audio>`;
       }
 
       msgDiv.innerHTML = `
         <div class="msg-header">
-          <img class="msg-avatar" src="${msg.senderPhoto || 'https://via.placeholder.com/22'}" alt="User">
+          <img class="msg-avatar" src="${msg.senderPhoto}" alt="U">
           <span class="msg-author">${msg.senderName}</span>
         </div>
         ${contentHTML}
-        <div class="msg-likes ${liked ? 'liked' : ''}" onclick="toggleLike('${msgId}', ${liked})">
-          <i class="fa-solid fa-heart"></i> <span>${msg.likes ? msg.likes.length : 0}</span>
+        <div class="msg-likes ${liked ? 'liked' : ''}" onclick="toggleLike('${docSnap.id}', ${liked})">
+          <i class="fa-solid fa-heart"></i> ${likesCount}
         </div>
       `;
-
       container.appendChild(msgDiv);
     });
-    container.scrollTop = container.scrollHeight;
+    
+    if(isAtBottom) container.scrollTop = container.scrollHeight;
   });
 }
 
@@ -235,7 +265,7 @@ window.sendTextMessage = async () => {
   const input = document.getElementById('chat-text-input');
   const text = input.value.trim();
   if (!text) return;
-
+  
   input.value = '';
   await addDoc(collection(db, "chats"), {
     text,
@@ -245,26 +275,34 @@ window.sendTextMessage = async () => {
     timestamp: new Date().toISOString(),
     likes: []
   });
+  document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
 };
 
-// GRAVAÇÃO DE ÁUDIO DE VOZ
-const micBtn = document.getElementById('mic-btn');
-micBtn.addEventListener('click', async () => {
+window.toggleLike = async (msgId, isLiked) => {
+  const msgRef = doc(db, "chats", msgId);
+  if (isLiked) await updateDoc(msgRef, { likes: arrayRemove(currentUser.uid) });
+  else await updateDoc(msgRef, { likes: arrayUnion(currentUser.uid) });
+};
+
+// Áudio
+let mediaRecorder = null;
+let audioChunks = [];
+document.getElementById('mic-btn').addEventListener('click', async () => {
   if (!mediaRecorder || mediaRecorder.state === 'inactive') {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorder = new MediaRecorder(stream);
       audioChunks = [];
-
+      
       mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
       mediaRecorder.onstop = async () => {
+        if(audioChunks.length === 0) return;
         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
         const reader = new FileReader();
         reader.readAsDataURL(audioBlob);
         reader.onloadend = async () => {
-          const base64Audio = reader.result;
           await addDoc(collection(db, "chats"), {
-            audio: base64Audio,
+            audio: reader.result,
             senderUid: currentUser.uid,
             senderName: userProfile.firstName,
             senderPhoto: userProfile.photoURL,
@@ -272,12 +310,13 @@ micBtn.addEventListener('click', async () => {
             likes: []
           });
         };
+        audioChunks = [];
       };
-
+      
       mediaRecorder.start();
       document.getElementById('recording-status').classList.remove('hidden');
     } catch (err) {
-      alert("Permissão de microfone negada.");
+      alert("Permita o acesso ao microfone no navegador.");
     }
   } else {
     mediaRecorder.stop();
@@ -287,54 +326,42 @@ micBtn.addEventListener('click', async () => {
 
 window.cancelRecording = () => {
   if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-    mediaRecorder.onstop = null;
+    audioChunks = [];
     mediaRecorder.stop();
     document.getElementById('recording-status').classList.add('hidden');
   }
 };
 
-window.toggleLike = async (msgId, isLiked) => {
-  const msgRef = doc(db, "chats", msgId);
-  if (isLiked) {
-    await updateDoc(msgRef, { likes: arrayRemove(currentUser.uid) });
-  } else {
-    await updateDoc(msgRef, { likes: arrayUnion(currentUser.uid) });
-  }
-};
-
-// MODAL CONFIGURAÇÕES E PROFILE
-window.openSettingsModal = () => {
+// Configurações
+window.openSettings = () => {
   document.getElementById('settings-avatar').src = userProfile.photoURL;
   document.getElementById('settings-name-display').innerText = userProfile.firstName;
   document.getElementById('settings-email-display').innerText = userProfile.email;
   document.getElementById('settings-name-input').value = userProfile.firstName;
-  document.getElementById('settings-modal').classList.remove('hidden');
+  openModal('settings-modal');
 };
-
-window.closeSettingsModal = () => document.getElementById('settings-modal').classList.add('hidden');
 
 window.updateProfileSettings = async (e) => {
   e.preventDefault();
   const newName = document.getElementById('settings-name-input').value;
   const fileInput = document.getElementById('settings-photo-input').files[0];
-
+  
   let newPhoto = userProfile.photoURL;
-
   if (fileInput) {
-    newPhoto = await new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (event) => resolve(event.target.result);
-      reader.readAsDataURL(fileInput);
+    newPhoto = await new Promise(res => {
+      const r = new FileReader();
+      r.onload = ev => res(ev.target.result);
+      r.readAsDataURL(fileInput);
     });
   }
 
-  const updatedData = { firstName: newName, photoURL: newPhoto };
-  await updateDoc(doc(db, "users", currentUser.uid), updatedData);
-  userProfile = { ...userProfile, ...updatedData };
-
+  await updateDoc(doc(db, "users", currentUser.uid), { firstName: newName, photoURL: newPhoto });
+  userProfile.firstName = newName;
+  userProfile.photoURL = newPhoto;
+  
   showMainApp();
-  closeSettingsModal();
+  closeModal('settings-modal');
 };
 
 window.handleLogout = () => signOut(auth);
-    
+      
