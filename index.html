@@ -1,15 +1,145 @@
+```html
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Projeto Itaqui - Portal & Comunidade</title>
-  <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+      --glass-bg: rgba(255, 255, 255, 0.07);
+      --glass-border: rgba(255, 255, 255, 0.12);
+      --primary-color: #6366f1;
+      --primary-hover: #4f46e5;
+      --accent-color: #10b981;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --danger-color: #ef4444;
+      --card-radius: 18px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background: var(--bg-gradient); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; }
+    .hidden { display: none !important; }
+
+    /* CARDS GLASSMORPHISM */
+    .glass-card {
+      background: var(--glass-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border); border-radius: var(--card-radius);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    }
+
+    /* SCREEN & MODALS */
+    .screen-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+    .auth-box { width: 100%; max-width: 400px; padding: 30px; text-align: center; }
+    .logo-header .logo-icon { font-size: 2.5rem; color: var(--primary-color); margin-bottom: 10px; }
+    .auth-tabs { display: flex; margin: 20px 0; background: rgba(0, 0, 0, 0.2); border-radius: 10px; padding: 4px; }
+    .tab-btn { flex: 1; padding: 10px; border: none; background: transparent; color: var(--text-muted); font-weight: 600; cursor: pointer; border-radius: 8px; transition: all 0.3s ease; }
+    .tab-btn.active { background: var(--primary-color); color: #fff; }
+    
+    .input-group { position: relative; margin-bottom: 15px; text-align: left; }
+    .input-group label { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 5px; display: block; }
+    .input-group i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
+    .input-group input, .input-group select, .input-group textarea {
+      width: 100%; padding: 12px 14px 12px 40px; background: rgba(0, 0, 0, 0.25); border: 1px solid var(--glass-border); border-radius: 10px; color: #fff; outline: none; font-size: 0.95rem;
+    }
+    .input-group textarea, .input-group select { padding-left: 14px; }
+    .input-group select option { background: #0f172a; color: #fff; }
+
+    .primary-btn { width: 100%; padding: 12px; border: none; border-radius: 10px; background: var(--primary-color); color: white; font-weight: bold; cursor: pointer; transition: background 0.2s, transform 0.1s; }
+    .primary-btn:active { transform: scale(0.98); }
+    .primary-btn:hover { background: var(--primary-hover); }
+    
+    .google-btn { width: 100%; padding: 12px; border: 1px solid var(--glass-border); border-radius: 10px; background: rgba(255, 255, 255, 0.1); color: white; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; transition: background 0.2s; }
+    .google-btn img { width: 20px; }
+    .divider { margin: 18px 0; position: relative; text-align: center; }
+    .divider::before { content: ''; position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: var(--glass-border); }
+    .divider span { position: relative; background: #141a2e; padding: 0 10px; color: var(--text-muted); font-size: 0.8rem; }
+
+    /* NAVBAR */
+    .navbar { display: flex; justify-content: space-between; align-items: center; padding: 15px 5%; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(10px); border-bottom: 1px solid var(--glass-border); position: sticky; top: 0; z-index: 100; }
+    .nav-brand { display: flex; align-items: center; gap: 10px; font-size: 1.3rem; font-weight: bold; color: var(--primary-color); }
+    .nav-actions { display: flex; align-items: center; gap: 10px; }
+    .admin-badge { background: #ef4444; color: white; border: none; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; cursor: pointer; }
+    .user-profile-btn { display: flex; align-items: center; gap: 10px; cursor: pointer; background: rgba(255, 255, 255, 0.08); padding: 5px 12px; border-radius: 25px; }
+    .user-profile-btn img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+    @media (max-width: 450px) { .nav-actions span { display: none; } .admin-badge { padding: 6px 10px; font-size: 0.75rem; } }
+
+    /* CAROUSEL CARDS */
+    .main-content { max-width: 1100px; margin: 0 auto; padding: 25px 15px; width: 100%; }
+    .section-title { margin-bottom: 20px; font-size: 1.2rem; color: var(--text-muted); display: flex; align-items: center; gap: 8px; }
+    .cards-carousel { display: flex; justify-content: center; align-items: center; gap: 15px; perspective: 1000px; overflow-x: auto; padding: 10px 0 25px 0; scroll-snap-type: x mandatory; }
+    
+    .event-card { flex: 0 0 280px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--card-radius); overflow: hidden; position: relative; transition: all 0.4s; scroll-snap-align: center; }
+    .event-card.side-card { transform: scale(0.9); opacity: 0.8; }
+    .event-card.center-card.active { flex: 0 0 320px; transform: scale(1.02); opacity: 1; border-color: var(--primary-color); box-shadow: 0 10px 30px rgba(99, 102, 241, 0.3); }
+    @media (max-width: 768px) {
+      .cards-carousel { justify-content: flex-start; padding-left: 20px; padding-right: 20px; }
+      .event-card { flex: 0 0 85vw; transform: scale(1) !important; opacity: 1 !important; margin-right: 15px; }
+    }
+
+    .card-badge { position: absolute; top: 12px; left: 12px; background: rgba(0, 0, 0, 0.6); padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; z-index: 2; }
+    .today-tag { background: var(--primary-color); }
+    .card-image-wrapper { height: 180px; position: relative; overflow: hidden; }
+    .card-image-wrapper img { width: 100%; height: 100%; object-fit: cover; }
+    .type-tag { position: absolute; bottom: 10px; right: 10px; background: rgba(16, 185, 129, 0.9); padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: bold; }
+    .card-body { padding: 15px; }
+    .card-body h3, .card-body h4 { margin-bottom: 8px; }
+    .card-body .preacher { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px; }
+    .card-body .description { font-size: 0.8rem; color: #cbd5e1; }
+    .lock-overlay { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px; z-index: 3; color: var(--text-muted); }
+
+    /* CHAT SECTION */
+    .chat-section { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--card-radius); margin-top: 30px; display: flex; flex-direction: column; height: 500px; overflow: hidden; }
+    .chat-header { padding: 15px 20px; background: rgba(0, 0, 0, 0.2); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); }
+    .online-indicator { color: var(--accent-color); font-size: 0.8rem; }
+    .online-indicator i { font-size: 0.6rem; }
+    .chat-messages-container { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+    
+    .message-bubble { max-width: 85%; background: rgba(255, 255, 255, 0.08); padding: 10px 14px; border-radius: 14px; border-bottom-left-radius: 4px; position: relative; align-self: flex-start; }
+    .message-bubble.mine { align-self: flex-end; background: var(--primary-color); border-bottom-left-radius: 14px; border-bottom-right-radius: 4px; }
+    .msg-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .msg-avatar { width: 24px; height: 24px; border-radius: 50%; }
+    .msg-author { font-size: 0.8rem; font-weight: bold; color: #e2e8f0; }
+    .msg-text { font-size: 0.95rem; word-break: break-word; line-height: 1.4; }
+    .msg-likes { margin-top: 8px; display: inline-flex; align-items: center; gap: 5px; font-size: 0.75rem; cursor: pointer; color: var(--text-muted); background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 10px;}
+    .msg-likes.liked i { color: #ef4444; }
+
+    .chat-input-bar { padding: 12px 15px; background: rgba(0, 0, 0, 0.25); display: flex; align-items: center; gap: 10px; }
+    .chat-input-bar input { flex: 1; background: rgba(255, 255, 255, 0.08); border: 1px solid var(--glass-border); padding: 12px 15px; border-radius: 25px; color: white; outline: none; font-size: 1rem; }
+    .icon-btn { background: transparent; border: none; color: var(--text-muted); font-size: 1.3rem; cursor: pointer; padding: 8px; border-radius: 50%; transition: color 0.2s; }
+    .icon-btn:hover { color: white; }
+    .send-btn { color: var(--primary-color); background: rgba(99, 102, 241, 0.1); }
+    
+    .recording-status { padding: 10px 15px; background: rgba(239, 68, 68, 0.2); border-top: 1px solid #ef4444; color: white; font-size: 0.9rem; display: flex; align-items: center; justify-content: space-between; }
+    .pulsing-red-dot { width: 12px; height: 12px; background: #ef4444; border-radius: 50%; display: inline-block; animation: pulse 1s infinite; margin-right: 10px;}
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+    .cancel-rec-btn { background: #ef4444; border: none; color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.8rem; cursor: pointer;}
+
+    /* MODALS */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 1000; padding: 20px; }
+    .modal-box { width: 100%; max-width: 450px; padding: 25px; position: relative; max-height: 90vh; overflow-y: auto;}
+    .modal-box.large { max-width: 600px; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .close-btn { background: transparent; border: none; color: var(--text-muted); font-size: 1.8rem; cursor: pointer; }
+    
+    .avatar-upload { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 20px; }
+    .avatar-upload img { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary-color); }
+    .upload-btn { font-size: 0.9rem; color: #fff; background: var(--primary-color); padding: 5px 15px; border-radius: 20px; cursor: pointer; }
+    .avatar-upload input[type="file"] { display: none; }
+    
+    .danger-btn { width: 100%; padding: 12px; margin-top: 15px; background: transparent; border: 1px solid var(--danger-color); color: var(--danger-color); border-radius: 10px; font-weight: bold; cursor: pointer; }
+    .danger-btn:hover { background: var(--danger-color); color: white; }
+    
+    .settings-profile-info { text-align: center; margin-bottom: 20px; }
+    .settings-profile-info img { width: 80px; height: 80px; border-radius: 50%; margin-bottom: 10px; }
+  </style>
 </head>
 <body>
 
-  <!-- TELA DE AUTENTICAÇÃO (LOGIN / REGISTRO) -->
+  <!-- AUTENTICAÇÃO -->
   <div id="auth-screen" class="screen-container">
     <div class="glass-card auth-box">
       <div class="logo-header">
@@ -26,11 +156,11 @@
       <form id="auth-form" onsubmit="handleAuthSubmit(event)">
         <div class="input-group">
           <i class="fa-solid fa-envelope"></i>
-          <input type="email" id="auth-email" placeholder="Seu e-mail (Gmail)" required>
+          <input type="email" id="auth-email" placeholder="Seu e-mail" required>
         </div>
         <div class="input-group">
           <i class="fa-solid fa-lock"></i>
-          <input type="password" id="auth-password" placeholder="Sua senha" required>
+          <input type="password" id="auth-password" placeholder="Sua senha (mín. 6 dígitos)" required minlength="6">
         </div>
         
         <button type="submit" id="auth-submit-btn" class="primary-btn">
@@ -40,24 +170,24 @@
 
       <div class="divider"><span>ou</span></div>
 
-      <button class="google-btn" onclick="handleGoogleLogin()">
+      <button id="google-login-btn" class="google-btn" onclick="handleGoogleLogin()">
         <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
         <span>Continuar com Google</span>
       </button>
     </div>
   </div>
 
-  <!-- MODAL DE ONBOARDING (PRIMEIRO ACESSO) -->
+  <!-- ONBOARDING -->
   <div id="onboarding-modal" class="modal-overlay hidden">
     <div class="glass-card modal-box">
       <h3>Complete seu Perfil</h3>
-      <p>Precisamos de mais algumas informações antes de entrar.</p>
+      <p style="margin-bottom: 15px; font-size: 0.9rem; color: #94a3b8;">Antes de entrar, precisamos de algumas informações.</p>
 
       <form id="onboarding-form" onsubmit="saveOnboarding(event)">
         <div class="avatar-upload">
-          <img id="avatar-preview" src="https://via.placeholder.com/100" alt="Avatar">
-          <label for="avatar-input" class="upload-btn"><i class="fa-solid fa-camera"></i> Escolher Foto</label>
-          <input type="file" id="avatar-input" accept="image/*" onchange="previewImage(event)">
+          <img id="avatar-preview" src="https://ui-avatars.com/api/?name=User&background=6366f1&color=fff" alt="Avatar">
+          <label for="avatar-input" class="upload-btn"><i class="fa-solid fa-camera"></i> Escolher Foto da Galeria</label>
+          <input type="file" id="avatar-input" accept="image/*" onchange="previewImage(event, 'avatar-preview')">
         </div>
 
         <div class="input-group">
@@ -75,113 +205,114 @@
     </div>
   </div>
 
-  <!-- APLICAÇÃO PRINCIPAL -->
+  <!-- APP PRINCIPAL -->
   <div id="app-screen" class="hidden">
-    <!-- NAVBAR -->
     <header class="navbar">
       <div class="nav-brand">
         <i class="fa-solid fa-church"></i>
         <span>Itaqui</span>
       </div>
       <div class="nav-actions">
-        <button id="admin-badge-btn" class="admin-badge hidden" onclick="openAdminModal()">
+        <button id="admin-badge-btn" class="admin-badge hidden" onclick="openModal('admin-modal')">
           <i class="fa-solid fa-user-shield"></i> Painel Admin
         </button>
-        <div class="user-profile-btn" onclick="openSettingsModal()">
-          <img id="nav-user-photo" src="https://via.placeholder.com/40" alt="Perfil">
-          <span id="nav-user-name">Usuário</span>
+        <div class="user-profile-btn" onclick="openSettings()">
+          <img id="nav-user-photo" src="" alt="Perfil">
+          <span id="nav-user-name">Carregando...</span>
         </div>
       </div>
     </header>
 
-    <!-- CONTAINER DE CARDS DADOS DO DIA (ONTEM / HOJE / AMANHÃ) -->
     <main class="main-content">
+      <!-- PROGRAMAÇÃO -->
       <section class="cards-carousel-section">
         <h2 class="section-title"><i class="fa-solid fa-calendar-day"></i> Programação</h2>
         <div class="cards-carousel">
-          <!-- CARD ONTEM -->
-          <div class="event-card side-card left" id="card-yesterday">
+          
+          <!-- ONTEM -->
+          <div class="event-card side-card" id="card-yesterday">
             <div class="card-badge">Ontem</div>
             <div class="card-image-wrapper">
-              <img id="yesterday-img" src="https://images.unsplash.com/photo-1438232992991-995b7058bbb3?w=500" alt="Capa">
+              <img id="yesterday-img" src="https://images.unsplash.com/photo-1438232992991-995b7058bbb3?w=500" alt="Ontem">
             </div>
             <div class="card-body">
-              <h4 id="yesterday-title">Culto Passado</h4>
+              <h4 id="yesterday-title">Encerrado</h4>
               <p class="preacher"><i class="fa-solid fa-microphone"></i> <span id="yesterday-preacher">-</span></p>
             </div>
           </div>
 
-          <!-- CARD HOJE (DESTAQUE NO MEIO) -->
+          <!-- HOJE -->
           <div class="event-card center-card active" id="card-today">
             <div class="card-badge today-tag">Hoje</div>
             <div class="card-image-wrapper">
-              <img id="today-img" src="https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=600" alt="Capa Hoje">
-              <div class="type-tag" id="today-type">Culto Principal</div>
+              <img id="today-img" src="https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=600" alt="Hoje">
+              <div class="type-tag" id="today-type">A definir</div>
             </div>
             <div class="card-body">
-              <h3 id="today-title">Carregando evento de hoje...</h3>
-              <p class="preacher"><i class="fa-solid fa-user-tie"></i> Pregador: <strong id="today-preacher">A definir</strong></p>
-              <p class="description" id="today-desc">Acompanhe nossa programação do dia.</p>
+              <h3 id="today-title">Carregando...</h3>
+              <p class="preacher"><i class="fa-solid fa-user-tie"></i> Dirigente: <strong id="today-preacher">A definir</strong></p>
+              <p class="description" id="today-desc">Fique atento às atualizações do Admin.</p>
             </div>
           </div>
 
-          <!-- CARD AMANHÃ -->
-          <div class="event-card side-card right locked" id="card-tomorrow">
+          <!-- AMANHÃ -->
+          <div class="event-card side-card" id="card-tomorrow">
             <div class="card-badge">Amanhã</div>
             <div class="lock-overlay" id="tomorrow-lock">
-              <i class="fa-solid fa-lock"></i>
-              <span>Bloqueado até a publicação</span>
+              <i class="fa-solid fa-lock" style="font-size: 2rem; margin-bottom: 10px;"></i>
+              <span style="font-size: 0.9rem; text-align: center; padding: 0 10px;">Liberado amanhã às 00:00</span>
             </div>
             <div class="card-image-wrapper">
-              <img id="tomorrow-img" src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500" alt="Capa">
+              <img id="tomorrow-img" src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500" alt="Amanhã">
             </div>
             <div class="card-body">
-              <h4 id="tomorrow-title">Próximo Evento</h4>
+              <h4 id="tomorrow-title">Próximo</h4>
               <p class="preacher"><i class="fa-solid fa-microphone"></i> <span id="tomorrow-preacher">-</span></p>
             </div>
           </div>
+
         </div>
       </section>
 
-      <!-- CHAT EM GRUPO DA COMUNIDADE -->
+      <!-- CHAT -->
       <section class="chat-section">
         <div class="chat-header">
-          <h3><i class="fa-solid fa-comments"></i> Chat da Comunidade</h3>
+          <h3><i class="fa-solid fa-comments"></i> Comunidade</h3>
           <span class="online-indicator"><i class="fa-solid fa-circle"></i> Ao vivo</span>
         </div>
 
-        <div id="chat-messages" class="chat-messages-container">
-          <!-- Mensagens renderizadas via JS -->
+        <div id="chat-messages" class="chat-messages-container"></div>
+
+        <div id="recording-status" class="recording-status hidden">
+          <div><span class="pulsing-red-dot"></span> Gravando áudio...</div>
+          <button class="cancel-rec-btn" onclick="cancelRecording()">Cancelar</button>
         </div>
 
         <div class="chat-input-bar">
-          <button id="mic-btn" class="icon-btn mic-btn" title="Gravar Áudio">
+          <button id="mic-btn" class="icon-btn" title="Gravar Áudio">
             <i class="fa-solid fa-microphone"></i>
           </button>
-          <input type="text" id="chat-text-input" placeholder="Digite sua mensagem...">
-          <button id="send-msg-btn" class="icon-btn send-btn" onclick="sendTextMessage()">
+          <input type="text" id="chat-text-input" placeholder="Mensagem..." onkeypress="if(event.key === 'Enter') sendTextMessage()">
+          <button class="icon-btn send-btn" onclick="sendTextMessage()">
             <i class="fa-solid fa-paper-plane"></i>
           </button>
-        </div>
-        <div id="recording-status" class="recording-status hidden">
-          <span class="pulsing-red-dot"></span> Gravando áudio... <button onclick="cancelRecording()">Cancelar</button>
         </div>
       </section>
     </main>
   </div>
 
-  <!-- MODAL DO PAINEL ADMIN -->
+  <!-- MODAL ADMIN -->
   <div id="admin-modal" class="modal-overlay hidden">
     <div class="glass-card modal-box large">
       <div class="modal-header">
-        <h3><i class="fa-solid fa-sliders"></i> Painel do Administrador</h3>
-        <button class="close-btn" onclick="closeAdminModal()">&times;</button>
+        <h3><i class="fa-solid fa-sliders"></i> Painel do Admin</h3>
+        <button class="close-btn" onclick="closeModal('admin-modal')">&times;</button>
       </div>
-      <form id="admin-event-form" onsubmit="saveAdminEvent(event)">
-        <h4>Publicar/Atualizar Evento de Hoje</h4>
+      <form onsubmit="saveAdminEvent(event)">
+        <p style="margin-bottom:15px; font-size:0.9rem; color:var(--text-muted);">Defina a programação de Hoje para todos os membros.</p>
         
         <div class="input-group">
-          <label>Título do Evento</label>
+          <label>Título / Tema</label>
           <input type="text" id="admin-title" placeholder="Ex: Culto da Família" required>
         </div>
 
@@ -199,62 +330,10 @@
 
         <div class="input-group">
           <label>Quem irá Pregar / Dirigir</label>
-          <input type="text" id="admin-preacher" placeholder="Nome do Pregador ou Líder" required>
+          <input type="text" id="admin-preacher" placeholder="Nome" required>
         </div>
 
         <div class="input-group">
-          <label>Foto de Capa (URL ou Upload)</label>
-          <input type="file" id="admin-img-file" accept="image/*" onchange="previewAdminImage(event)">
-          <input type="text" id="admin-img-url" placeholder="Ou cole a URL da imagem">
-        </div>
-
-        <div class="input-group">
-          <label>Descrição Breve</label>
-          <textarea id="admin-desc" rows="3" placeholder="Detalhes do culto ou ensaio..."></textarea>
-        </div>
-
-        <button type="submit" class="primary-btn"><i class="fa-solid fa-floppy-disk"></i> Publicar para Hoje</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- MODAL DE CONFIGURAÇÕES -->
-  <div id="settings-modal" class="modal-overlay hidden">
-    <div class="glass-card modal-box">
-      <div class="modal-header">
-        <h3><i class="fa-solid fa-gear"></i> Configurações da Conta</h3>
-        <button class="close-btn" onclick="closeSettingsModal()">&times;</button>
-      </div>
-      
-      <div class="settings-profile-info">
-        <img id="settings-avatar" src="https://via.placeholder.com/80" alt="Avatar">
-        <h4 id="settings-name-display">-</h4>
-        <p id="settings-email-display">-</p>
-      </div>
-
-      <form id="settings-form" onsubmit="updateProfileSettings(event)">
-        <div class="input-group">
-          <label>Alterar Nome</label>
-          <input type="text" id="settings-name-input">
-        </div>
-
-        <div class="input-group">
-          <label>Alterar Foto de Perfil</label>
-          <input type="file" id="settings-photo-input" accept="image/*">
-        </div>
-
-        <button type="submit" class="primary-btn">Salvar Alterações</button>
-      </form>
-
-      <hr class="divider-line">
-
-      <button class="danger-btn" onclick="handleLogout()">
-        <i class="fa-solid fa-right-from-bracket"></i> Sair da Conta
-      </button>
-    </div>
-  </div>
-
-  <script type="module" src="script.js"></script>
-</body>
-                </html>
-            
+          <label>Foto de Capa (Galeria)</label>
+          <input type="file" id="admin-img-file" accept="image/*" onchange="previewImage(event, 'admin-img-preview')" style="display:block; padding: 5px; background: transparent; border: 1px solid var(--glass-border); border-radius: 8px;">
+          <img id="admin-img-preview" sr
