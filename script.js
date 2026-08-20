@@ -1,13 +1,13 @@
-import { initializeApp } from "[https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js](https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js)";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { 
   getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, 
   signInWithRedirect, getRedirectResult, GoogleAuthProvider, signOut, onAuthStateChanged 
-} from "[https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js](https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js)";
+} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { 
   getFirestore, doc, setDoc, getDoc, collection, addDoc, onSnapshot, query, orderBy, updateDoc, arrayUnion, arrayRemove 
-} from "[https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js](https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js)";
+} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-// Configuração do seu Projeto Firebase
+// Configuração exata do Firebase do projeto
 const firebaseConfig = {
   apiKey: "AIzaSyC-2IggENJIhqbGSdP5RIefR-VQt1RCT90",
   authDomain: "projetoitaqui-8327c.firebaseapp.com",
@@ -28,15 +28,15 @@ let userProfile = null;
 let currentAuthMode = 'login';
 let adminImageBase64 = null;
 
-// Tratar o retorno do login redirecionado do Google
+// Gestão de redirecionamento do Google em telemóveis
 getRedirectResult(auth).catch((error) => {
-  console.error("Erro no redirecionamento do Google:", error);
+  console.error("Erro no redirecionamento Google:", error);
   if (error.code === 'auth/unauthorized-domain') {
-    alert("Atenção: Adicione 'babyyodayohan-ai.github.io' nos Domínios Autorizados no console do Firebase!");
+    alert("Atenção: Adicione o seu domínio do GitHub Pages nos 'Domínios Autorizados' no console do Firebase Authentication.");
   }
 });
 
-// Utilitários UI Globais (anexados ao window para o HTML poder chamar)
+// Funções Globais de UI (Modais e Abas)
 window.switchAuthTab = (mode) => {
   currentAuthMode = mode;
   document.getElementById('tab-login-btn').classList.toggle('active', mode === 'login');
@@ -61,7 +61,7 @@ window.previewImage = (e, targetId) => {
   }
 };
 
-// Monitorar Autenticação
+// Monitoramento de Sessão Ativa
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     currentUser = user;
@@ -70,25 +70,21 @@ onAuthStateChanged(auth, async (user) => {
       userProfile = userDoc.data();
       showMainApp();
     } else {
-      // Se entrou com Google, preenche nome e foto automaticamente
-      if(user.displayName) {
-        document.getElementById('onboard-name').value = user.displayName.split(' ')[0];
-      }
-      if(user.photoURL) {
-        document.getElementById('avatar-preview').src = user.photoURL;
-      }
+      if(user.displayName) document.getElementById('onboard-name').value = user.displayName.split(' ')[0];
+      if(user.photoURL) document.getElementById('avatar-preview').src = user.photoURL;
       document.getElementById('auth-screen').classList.add('hidden');
       document.getElementById('onboarding-modal').classList.remove('hidden');
     }
   } else {
-    currentUser = null; userProfile = null;
+    currentUser = null;
+    userProfile = null;
     document.getElementById('app-screen').classList.add('hidden');
     document.getElementById('onboarding-modal').classList.add('hidden');
     document.getElementById('auth-screen').classList.remove('hidden');
   }
 });
 
-// Submeter Login / Registo por Email
+// Autenticação Email/Senha
 window.handleAuthSubmit = async (e) => {
   e.preventDefault();
   const email = document.getElementById('auth-email').value.trim();
@@ -101,7 +97,7 @@ window.handleAuthSubmit = async (e) => {
   }
 
   btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> A processar...';
 
   try {
     if (currentAuthMode === 'login') {
@@ -111,33 +107,32 @@ window.handleAuthSubmit = async (e) => {
     }
   } catch (err) {
     if (err.code === 'auth/invalid-credential') {
-      alert("Erro: Conta não encontrada ou palavra-passe incorreta. Se é a primeira vez, clique na aba 'Registar'.");
+      alert("Erro: Conta não encontrada ou palavra-passe incorreta. Se é a primeira vez, clique em 'Registar'.");
     } else if (err.code === 'auth/email-already-in-use') {
-      alert("Este e-mail já está registado. Vá para a aba 'Entrar'.");
+      alert("Este e-mail já está registado. Selecione a aba 'Entrar'.");
     } else if (err.code === 'auth/weak-password') {
-      alert("A palavra-passe precisa de ter no mínimo 6 caracteres! Tente uma palavra-passe como 'Admin123'.");
+      alert("A palavra-passe é demasiado fraca (mínimo de 6 carateres).");
     } else {
-      alert("Erro: " + err.message);
+      alert("Erro de autenticação: " + err.message);
     }
   }
   btn.disabled = false;
   btn.innerHTML = `<span>${currentAuthMode === 'login' ? 'Entrar' : 'Registar'}</span>`;
 };
 
-// Login com Google usando Redirect (Compatível com Telemóveis)
+// Autenticação Google
 window.handleGoogleLogin = async () => {
-  const provider = new GoogleAuthProvider();
   try {
-    await signInWithRedirect(auth, provider);
+    await signInWithRedirect(auth, new GoogleAuthProvider());
   } catch (err) {
-    alert("Erro no Google Auth: " + err.message);
+    alert("Erro ao iniciar sessão com o Google: " + err.message);
   }
 };
 
-// Onboarding
+// Conclusão do Primeiro Acesso (Onboarding)
 window.saveOnboarding = async (e) => {
   e.preventDefault();
-  const name = document.getElementById('onboard-name').value;
+  const name = document.getElementById('onboard-name').value.trim();
   const dob = document.getElementById('onboard-dob').value;
   let photoSrc = document.getElementById('avatar-preview').src;
   
@@ -158,9 +153,10 @@ window.saveOnboarding = async (e) => {
   showMainApp();
 };
 
-// App Principal
+// Exibir a Aplicação Principal
 function showMainApp() {
   document.getElementById('auth-screen').classList.add('hidden');
+  document.getElementById('onboarding-modal').classList.add('hidden');
   document.getElementById('app-screen').classList.remove('hidden');
 
   document.getElementById('nav-user-name').innerText = userProfile.firstName;
@@ -170,19 +166,44 @@ function showMainApp() {
     document.getElementById('admin-badge-btn').classList.remove('hidden');
   }
   
-  loadEvents();
+  loadDynamicEvents();
   listenToChat();
 }
 
-// Programação
-function getTodayString() {
+// Gestão de Datas e Eventos (Ontem, Hoje, Amanhã)
+function getDateStr(offsetDays = 0) {
   const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
   return new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
 }
 
-function loadEvents() {
-  const todayStr = getTodayString();
+function loadDynamicEvents() {
+  const yesterdayStr = getDateStr(-1);
+  const todayStr = getDateStr(0);
+  const tomorrowStr = getDateStr(1);
+
+  // Rótulos dinâmicos dos dias
+  const dYest = new Date(); dYest.setDate(dYest.getDate() - 1);
+  const dTom = new Date(); dTom.setDate(dTom.getDate() + 1);
   
+  document.getElementById('badge-yesterday-text').innerText = dYest.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  document.getElementById('badge-tomorrow-text').innerText = dTom.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+
+  // Carregar Ontem
+  onSnapshot(doc(db, "events", yesterdayStr), (docSnap) => {
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      document.getElementById('yesterday-title').innerText = data.title;
+      document.getElementById('yesterday-preacher').innerText = data.preacher;
+      document.getElementById('yesterday-desc').innerText = data.description || 'Culto encerrado.';
+      if (data.image) document.getElementById('yesterday-img').src = data.image;
+    } else {
+      document.getElementById('yesterday-title').innerText = "Programação Passada";
+      document.getElementById('yesterday-preacher').innerText = "-";
+    }
+  });
+
+  // Carregar Hoje
   onSnapshot(doc(db, "events", todayStr), (docSnap) => {
     if (docSnap.exists()) {
       const data = docSnap.data();
@@ -192,46 +213,66 @@ function loadEvents() {
       document.getElementById('today-desc').innerText = data.description || '';
       if (data.image) document.getElementById('today-img').src = data.image;
     } else {
-      document.getElementById('today-title').innerText = "Programação de hoje ainda não definida";
-      document.getElementById('today-preacher').innerText = "A aguardar";
+      document.getElementById('today-title').innerText = "Nenhum evento publicado para hoje";
+      document.getElementById('today-type').innerText = "A aguardar";
+      document.getElementById('today-preacher').innerText = "A definir";
+      document.getElementById('today-desc').innerText = "O administrador ainda não publicou a programação de hoje.";
+    }
+  });
+
+  // Carregar Amanhã (Se publicado, remove o cadeado)
+  onSnapshot(doc(db, "events", tomorrowStr), (docSnap) => {
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      document.getElementById('tomorrow-title').innerText = data.title;
+      document.getElementById('tomorrow-preacher').innerText = data.preacher;
+      document.getElementById('tomorrow-desc').innerText = data.description || '';
+      if (data.image) document.getElementById('tomorrow-img').src = data.image;
+      document.getElementById('tomorrow-lock').classList.add('hidden');
+    } else {
+      document.getElementById('tomorrow-title').innerText = "Próximo Evento";
+      document.getElementById('tomorrow-preacher').innerText = "A definir";
+      document.getElementById('tomorrow-lock').classList.remove('hidden');
     }
   });
 }
 
+// Publicação do Administrador
 window.saveAdminEvent = async (e) => {
   e.preventDefault();
-  const title = document.getElementById('admin-title').value;
+  const title = document.getElementById('admin-title').value.trim();
   const type = document.getElementById('admin-type').value;
-  const preacher = document.getElementById('admin-preacher').value;
-  const desc = document.getElementById('admin-desc').value;
+  const preacher = document.getElementById('admin-preacher').value.trim();
+  const desc = document.getElementById('admin-desc').value.trim();
 
   const eventData = {
     title, type, preacher, description: desc,
-    image: adminImageBase64 || "[https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=600](https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=600)",
+    image: adminImageBase64 || "https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=600",
     updatedAt: new Date().toISOString()
   };
 
   const btn = e.target.querySelector('button');
   btn.innerText = "A publicar...";
   
-  await setDoc(doc(db, "events", getTodayString()), eventData);
+  await setDoc(doc(db, "events", getDateStr(0)), eventData);
   
-  alert("Atualizado com sucesso!");
-  btn.innerHTML = '<i class="fa-solid fa-upload"></i> Publicar para Hoje';
+  alert("Programação de hoje publicada com sucesso!");
+  btn.innerHTML = '<i class="fa-solid fa-upload"></i> Publicar Programação';
   closeModal('admin-modal');
 };
 
-// Chat
+// Chat Comunitário em Tempo Real (Texto, Voz e Curtidas)
 function listenToChat() {
   const q = query(collection(db, "chats"), orderBy("timestamp", "asc"));
   
   onSnapshot(q, (snapshot) => {
     const container = document.getElementById('chat-messages');
-    const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 100;
+    const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 150;
     
     container.innerHTML = '';
     snapshot.forEach((docSnap) => {
       const msg = docSnap.data();
+      const msgId = docSnap.id;
       const isMine = msg.senderUid === currentUser.uid;
       const liked = msg.likes && msg.likes.includes(currentUser.uid);
       const likesCount = msg.likes ? msg.likes.length : 0;
@@ -241,17 +282,17 @@ function listenToChat() {
 
       let contentHTML = msg.text ? `<div class="msg-text">${msg.text}</div>` : '';
       if (msg.audio) {
-        contentHTML += `<audio controls src="${msg.audio}" style="width: 100%; max-width: 250px; height: 30px; margin-top:5px; border-radius: 15px;"></audio>`;
+        contentHTML += `<audio controls src="${msg.audio}" style="width: 100%; max-width: 250px; height: 35px; margin-top:6px; border-radius: 15px;"></audio>`;
       }
 
       msgDiv.innerHTML = `
         <div class="msg-header">
-          <img class="msg-avatar" src="${msg.senderPhoto}" alt="U">
+          <img class="msg-avatar" src="${msg.senderPhoto}" alt="User">
           <span class="msg-author">${msg.senderName}</span>
         </div>
         ${contentHTML}
-        <div class="msg-likes ${liked ? 'liked' : ''}" onclick="toggleLike('${docSnap.id}', ${liked})">
-          <i class="fa-solid fa-heart"></i> ${likesCount}
+        <div class="msg-likes ${liked ? 'liked' : ''}" onclick="toggleLike('${msgId}', ${liked})">
+          <i class="fa-solid fa-heart"></i> <span>${likesCount}</span>
         </div>
       `;
       container.appendChild(msgDiv);
@@ -280,13 +321,17 @@ window.sendTextMessage = async () => {
 
 window.toggleLike = async (msgId, isLiked) => {
   const msgRef = doc(db, "chats", msgId);
-  if (isLiked) await updateDoc(msgRef, { likes: arrayRemove(currentUser.uid) });
-  else await updateDoc(msgRef, { likes: arrayUnion(currentUser.uid) });
+  if (isLiked) {
+    await updateDoc(msgRef, { likes: arrayRemove(currentUser.uid) });
+  } else {
+    await updateDoc(msgRef, { likes: arrayUnion(currentUser.uid) });
+  }
 };
 
-// Áudio
+// Gravação de Mensagem de Voz no Chat
 let mediaRecorder = null;
 let audioChunks = [];
+
 document.getElementById('mic-btn').addEventListener('click', async () => {
   if (!mediaRecorder || mediaRecorder.state === 'inactive') {
     try {
@@ -316,7 +361,7 @@ document.getElementById('mic-btn').addEventListener('click', async () => {
       mediaRecorder.start();
       document.getElementById('recording-status').classList.remove('hidden');
     } catch (err) {
-      alert("Permita o acesso ao microfone no navegador.");
+      alert("Permita o acesso ao microfone nas definições do seu navegador para enviar áudio.");
     }
   } else {
     mediaRecorder.stop();
@@ -332,7 +377,7 @@ window.cancelRecording = () => {
   }
 };
 
-// Configurações
+// Definições e Alteração de Perfil
 window.openSettings = () => {
   document.getElementById('settings-avatar').src = userProfile.photoURL;
   document.getElementById('settings-name-display').innerText = userProfile.firstName;
@@ -343,7 +388,7 @@ window.openSettings = () => {
 
 window.updateProfileSettings = async (e) => {
   e.preventDefault();
-  const newName = document.getElementById('settings-name-input').value;
+  const newName = document.getElementById('settings-name-input').value.trim();
   const fileInput = document.getElementById('settings-photo-input').files[0];
   
   let newPhoto = userProfile.photoURL;
@@ -364,4 +409,3 @@ window.updateProfileSettings = async (e) => {
 };
 
 window.handleLogout = () => signOut(auth);
-      
