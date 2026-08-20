@@ -1,11 +1,15 @@
 ```html
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-PT">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Projeto Itaqui - Portal & Comunidade</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- ========================================== -->
+  <!-- ESTILOS CSS (STYLE)                        -->
+  <!-- ========================================== -->
   <style>
     :root {
       --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
@@ -140,28 +144,32 @@
 </head>
 <body>
 
+  <!-- ========================================== -->
+  <!-- ESTRUTURA HTML (INDEX)                     -->
+  <!-- ========================================== -->
+
   <!-- AUTENTICAÇÃO -->
   <div id="auth-screen" class="screen-container">
     <div class="glass-card auth-box">
       <div class="logo-header">
         <i class="fa-solid fa-church logo-icon"></i>
         <h2>Projeto Itaqui</h2>
-        <p>Acesse sua conta para continuar</p>
+        <p>Aceda à sua conta para continuar</p>
       </div>
 
       <div class="auth-tabs">
         <button id="tab-login-btn" class="tab-btn active" onclick="switchAuthTab('login')">Entrar</button>
-        <button id="tab-register-btn" class="tab-btn" onclick="switchAuthTab('register')">Registrar</button>
+        <button id="tab-register-btn" class="tab-btn" onclick="switchAuthTab('register')">Registar</button>
       </div>
 
       <form id="auth-form" onsubmit="handleAuthSubmit(event)">
         <div class="input-group">
           <i class="fa-solid fa-envelope"></i>
-          <input type="email" id="auth-email" placeholder="Seu e-mail" required>
+          <input type="email" id="auth-email" placeholder="O seu e-mail" required>
         </div>
         <div class="input-group">
           <i class="fa-solid fa-lock"></i>
-          <input type="password" id="auth-password" placeholder="Sua senha (mín. 6 dígitos)" required minlength="6">
+          <input type="password" id="auth-password" placeholder="A sua palavra-passe (mín. 6 dígitos)" required minlength="6">
           <span class="input-hint">Mínimo de 6 caracteres (ex: Admin123)</span>
         </div>
         
@@ -174,15 +182,15 @@
 
       <button id="google-login-btn" class="google-btn" onclick="handleGoogleLogin()">
         <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
-        <span>Continuar com Google</span>
+        <span>Continuar com o Google</span>
       </button>
     </div>
   </div>
 
-  <!-- ONBOARDING -->
+  <!-- ONBOARDING (PRIMEIRO ACESSO) -->
   <div id="onboarding-modal" class="modal-overlay hidden">
     <div class="glass-card modal-box">
-      <h3>Complete seu Perfil</h3>
+      <h3>Complete o seu Perfil</h3>
       <p style="margin-bottom: 15px; font-size: 0.9rem; color: #94a3b8;">Antes de entrar, precisamos de algumas informações.</p>
 
       <form id="onboarding-form" onsubmit="saveOnboarding(event)">
@@ -202,7 +210,7 @@
           <input type="date" id="onboard-dob" required>
         </div>
 
-        <button type="submit" class="primary-btn">Concluir Cadastro</button>
+        <button type="submit" class="primary-btn">Concluir Registo</button>
       </form>
     </div>
   </div>
@@ -220,7 +228,7 @@
         </button>
         <div class="user-profile-btn" onclick="openSettings()">
           <img id="nav-user-photo" src="" alt="Perfil">
-          <span id="nav-user-name">Carregando...</span>
+          <span id="nav-user-name">A carregar...</span>
         </div>
       </div>
     </header>
@@ -248,11 +256,11 @@
             <div class="card-badge today-tag">Hoje</div>
             <div class="card-image-wrapper">
               <img id="today-img" src="https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=600" alt="Hoje">
-              <div class="type-tag" id="today-type">A definir</div>
+              <div class="type-tag" id="today-type">Por definir</div>
             </div>
             <div class="card-body">
-              <h3 id="today-title">Carregando...</h3>
-              <p class="preacher"><i class="fa-solid fa-user-tie"></i> Dirigente: <strong id="today-preacher">A definir</strong></p>
+              <h3 id="today-title">A carregar...</h3>
+              <p class="preacher"><i class="fa-solid fa-user-tie"></i> Dirigente: <strong id="today-preacher">Por definir</strong></p>
               <p class="description" id="today-desc">Fique atento às atualizações do Admin.</p>
             </div>
           </div>
@@ -262,7 +270,7 @@
             <div class="card-badge">Amanhã</div>
             <div class="lock-overlay" id="tomorrow-lock">
               <i class="fa-solid fa-lock" style="font-size: 2rem; margin-bottom: 10px;"></i>
-              <span style="font-size: 0.9rem; text-align: center; padding: 0 10px;">Liberado amanhã às 00:00</span>
+              <span style="font-size: 0.9rem; text-align: center; padding: 0 10px;">Desbloqueia amanhã às 00:00</span>
             </div>
             <div class="card-image-wrapper">
               <img id="tomorrow-img" src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500" alt="Amanhã">
@@ -276,17 +284,17 @@
         </div>
       </section>
 
-      <!-- CHAT -->
+      <!-- CHAT DA COMUNIDADE -->
       <section class="chat-section">
         <div class="chat-header">
           <h3><i class="fa-solid fa-comments"></i> Comunidade</h3>
-          <span class="online-indicator"><i class="fa-solid fa-circle"></i> Ao vivo</span>
+          <span class="online-indicator"><i class="fa-solid fa-circle"></i> Em direto</span>
         </div>
 
         <div id="chat-messages" class="chat-messages-container"></div>
 
         <div id="recording-status" class="recording-status hidden">
-          <div><span class="pulsing-red-dot"></span> Gravando áudio...</div>
+          <div><span class="pulsing-red-dot"></span> A gravar áudio...</div>
           <button class="cancel-rec-btn" onclick="cancelRecording()">Cancelar</button>
         </div>
 
@@ -327,14 +335,4 @@
             <option value="Círculo de Oração">Círculo de Oração</option>
             <option value="Percussão">Percussão</option>
             <option value="Outro">Outro</option>
-          </select>
-        </div>
-
-        <div class="input-group">
-          <label>Quem irá Pregar / Dirigir</label>
-          <input type="text" id="admin-preacher" placeholder="Nome" required>
-        </div>
-
-        <div class="input-group">
-          <label>Foto de Capa (Galeria)</label>
-          <input type="file" id="admin-img-file" accept="image/*" onchange="previewImage(event, 'admi
+          </se
